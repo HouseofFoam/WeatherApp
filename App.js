@@ -1,20 +1,56 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator } from "react-native";
+import WeatherSearch from "./src/components/weatherSearch";
+import WeatherInfo from "./src/components/weatherInfo";
+import axios from "axios";
+import { BASE_URL, API_KEY } from "./src/Constants";
+import { useState } from "react";
 
 export default function App() {
+  const [status, setStatus] = useState("");
+  const [weatherData, setWeatherData] = useState();
+  function searchWeather(location) {
+    setStatus("loading");
+    axios
+      .get(`${BASE_URL}?q=${location}&appid=${API_KEY}`)
+      .then((response) => {
+        const data = response.data;
+        data.visibility /= 1000;
+        data.visibility = data.visibility.toFixed(2);
+        data.main.temp -= 273.15;
+        data.main.temp = data.main.temp.toFixed(2);
+        setWeatherData(data);
+        setStatus("success");
+      })
+      .catch((error) => {
+        setStatus("error");
+      });
+  }
+  function renderComponent() {
+    switch (status) {
+      case "loading":
+        return <ActivityIndicator size="large" />;
+      case "success":
+        return <WeatherInfo weatherData={weatherData} />;
+      case "error":
+        return (
+          <Text>
+            Something went wrong. Please try again with a correct city name.
+          </Text>
+        );
+      default:
+        return;
+    }
+  }
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <WeatherSearch searchWeather={searchWeather} />
+      <View style={styles.container}>{renderComponent()}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 20,
   },
 });
